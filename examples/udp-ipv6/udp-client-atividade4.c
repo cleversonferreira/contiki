@@ -39,10 +39,15 @@
 #define DEBUG DEBUG_PRINT
 #include "net/ip/uip-debug.h"
 
-#define SEND_INTERVAL		15 * CLOCK_SECOND
+#define SEND_INTERVAL		5 * CLOCK_SECOND
 #define MAX_PAYLOAD_LEN		40
 #define CONN_PORT     8802
 #define MDNS 0
+
+#define LED_TOGGLE_REQUEST (0x79)
+#define LED_SET_STATE (0x7A)
+#define LED_GET_STATE (0x7B)
+#define LED_STATE (0x7C)
 
 static char buf[MAX_PAYLOAD_LEN];
 
@@ -70,13 +75,17 @@ tcpip_handler(void)
 static void
 timeout_handler(void)
 {
-    char payload = 0;
+    char payload = LED_TOGGLE_REQUEST;
 
     buf[0] = payload;
     if(uip_ds6_get_global(ADDR_PREFERRED) == NULL) {
       PRINTF("Aguardando auto-configuracao de IP\n");
       return;
     }
+    PRINTF ("Cliente para[");
+    PRINT6ADDR (&client_conn -> ripaddr);
+    PRINTF ("]:% u", UIP_HTONS (client_conn -> rport));
+
     uip_udp_packet_send(client_conn, buf, strlen(buf));
 }
 /*---------------------------------------------------------------------------*/
@@ -183,11 +192,11 @@ PROCESS_THREAD(udp_client_process, ev, data)
   }
 #else
   //c_onfigures the destination IPv6 address
-  uip_ip6addr(&ipaddr, 0xfe80, 0, 0, 0, 0x215, 0x2000, 0x0002, 0x2145);
+  uip_ip6addr(&ipaddr, 0xFD00, 0, 0, 0, 0x212, 0x4B00, 0x791, 0xB681);
 #endif
   /* new connection with remote host */
-  client_conn = udp_new(&ipaddr, UIP_HTONS(CONN_PORT), NULL);
-  udp_bind(client_conn, UIP_HTONS(CONN_PORT));
+  client_conn = udp_new(&ipaddr, UIP_HTONS(8802), NULL);
+  udp_bind(client_conn, UIP_HTONS(8802));
 
   PRINT6ADDR(&client_conn->ripaddr);
   PRINTF(" local/remote port %u/%u\n",
